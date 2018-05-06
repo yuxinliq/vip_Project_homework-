@@ -22,12 +22,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class DispatcherServlet extends HttpServlet {
 
-    private Properties contextConfigLocation = new Properties();
-
-    private Map<String, Object> beanMap = new ConcurrentHashMap<>();
-
-    private List<String> classNames = new ArrayList<>();
-
     private GPApplicationContext context;
 
     @Override
@@ -44,60 +38,12 @@ public class DispatcherServlet extends HttpServlet {
     public void init(ServletConfig config) {
         context = new GPApplicationContext(config.getInitParameter("contextConfigLocation"));
         initHandlerMapping();
+
+        return;
     }
 
     private void initHandlerMapping() {
 
     }
 
-    private void doAutowired() {
-        if (beanMap == null) {
-            return;
-        }
-        for (Object bean : beanMap.values()) {
-            for (Field field : bean.getClass().getDeclaredFields()) {
-                if (field.isAnnotationPresent(Autowired.class)) {
-                    field.setAccessible(true);
-                    Autowired autowired = field.getAnnotation(Autowired.class);
-                    String beanName = autowired.value().isEmpty() ? field.getType().getName() : autowired.value();
-                    try {
-                        field.set(bean, beanMap.get(beanName));
-                    } catch (IllegalAccessException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        }
-    }
-
-    private void doRegistry() {
-        if (classNames.isEmpty()) {
-            return;
-        }
-        try {
-            for (String name : classNames) {
-                Class<?> clazz = Class.forName(name);
-                if (clazz.isAnnotationPresent(Component.class)) {
-                    Component annotation = clazz.getAnnotation(Component.class);
-                    Object instance = clazz.newInstance();
-                    if (!annotation.value().isEmpty()) {
-                        beanMap.put(annotation.value(), instance);
-                    } else {
-                        beanMap.put(lowerFirstCase(clazz.getSimpleName()), instance);
-                    }
-                    for (Class in : clazz.getInterfaces()) {
-                        beanMap.put(in.getName(), instance);
-                    }
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    private String lowerFirstCase(String str) {
-        char[] chars = str.toCharArray();
-        chars[0] += 32;
-        return String.valueOf(chars);
-    }
 }
