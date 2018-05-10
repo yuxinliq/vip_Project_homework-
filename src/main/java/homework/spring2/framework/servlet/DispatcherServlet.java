@@ -27,7 +27,7 @@ public class DispatcherServlet extends HttpServlet {
 
     private Map<HandlerMapping, HandlerAdapter> handlerAdapters = new ConcurrentHashMap<>();
 
-    private List<ViewReslover> viewReslovers = new ArrayList<>();
+    private List<ViewReslover> viewResolvers = new ArrayList<>();
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
@@ -45,11 +45,11 @@ public class DispatcherServlet extends HttpServlet {
         }
     }
 
-    private void doDispatcher(HttpServletRequest req, HttpServletResponse resp) {
+    private void doDispatcher(HttpServletRequest req, HttpServletResponse resp) throws Exception {
         HandlerMapping mapping = getHandlerMapping(req);
         HandlerAdapter adapter = getHandlerAdapter(mapping);
         ViewAndModel mv = adapter.handle(req, resp, mapping);
-        processDispatchResult(mv);
+        processDispatchResult(resp, mv);
     }
 
     private HandlerMapping getHandlerMapping(HttpServletRequest req) {
@@ -68,7 +68,27 @@ public class DispatcherServlet extends HttpServlet {
         return this.handlerAdapters.get(mapping);
     }
 
-    private void processDispatchResult(ViewAndModel mv) {
+    private void processDispatchResult(HttpServletResponse resp, ViewAndModel mv) throws Exception {
+        //调用viewResolver的resolveView方法
+        if (null == mv) {
+            return;
+        }
+
+        if (this.viewResolvers.isEmpty()) {
+            return;
+        }
+
+        for (ViewReslover viewResolver : this.viewResolvers) {
+
+            if (!mv.getViewName().equals(viewResolver.getViewName())) {
+                continue;
+            }
+            String out = viewResolver.viewResolver(mv);
+            if (out != null) {
+                resp.getWriter().write(out);
+                break;
+            }
+        }
 
     }
 
@@ -144,7 +164,7 @@ public class DispatcherServlet extends HttpServlet {
             //处理非命名参数:保存req和resp参数下标
             Class<?>[] parameterTypes = mapping.getMethod().getParameterTypes();
             for (int i = 0; i < parameterTypes.length; i++) {
-                if (parameterTypes[i] == HttpServletRequest.class || parameterTypes[i] == HttpServletResponse.class) {
+                if (parameterTypes[i] == HttpServletRequest.class || parameterTypes[i] == HttpServletResponse.class || parameterTypes[i] == ViewAndModel.class) {
                     paramMap.put(parameterTypes[i].getName(), i);
                 }
             }
@@ -172,7 +192,7 @@ public class DispatcherServlet extends HttpServlet {
                 addViewResolvers(file, namePrefix + file.getName() + "/");
                 continue;
             }
-            this.viewReslovers.add(new ViewReslover(namePrefix + file.getName(), file));
+            this.viewResolvers.add(new ViewReslover(namePrefix + file.getName(), file));
         }
     }
 
