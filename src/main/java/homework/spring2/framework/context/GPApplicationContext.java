@@ -2,6 +2,7 @@ package homework.spring2.framework.context;
 
 import homework.spring2.framework.annotation.Autowired;
 import homework.spring2.framework.annotation.Component;
+import homework.spring2.framework.annotation.Controller;
 import homework.spring2.framework.beans.BeanDefinition;
 import homework.spring2.framework.beans.BeanWrapper;
 import homework.spring2.framework.context.support.BeanDefinitionReader;
@@ -11,6 +12,7 @@ import homework.utils.StrUtil;
 import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class GPApplicationContext implements BeanFactory {
@@ -24,6 +26,10 @@ public class GPApplicationContext implements BeanFactory {
     public GPApplicationContext(String... locations) {
         this.locations = locations;
         refresh();
+    }
+
+    public String[] getBeanDefinitionNames() {
+        return beanDefinitionMap.keySet().toArray(new String[beanDefinitionMap.size()]);
     }
 
     public void refresh() {
@@ -51,7 +57,7 @@ public class GPApplicationContext implements BeanFactory {
         for (String className : classNames) {
             try {
                 Class<?> clazz = Class.forName(className);
-                if (clazz.isInterface() || !clazz.isAnnotationPresent(Component.class)) {
+                if (clazz.isInterface() || !isSpringBean(clazz)) {
                     continue;
                 }
                 BeanDefinition beanDefinition = reader.registerBean(className);
@@ -68,14 +74,28 @@ public class GPApplicationContext implements BeanFactory {
         }
     }
 
+    private boolean isSpringBean(Class<?> clazz) {
+        return clazz.isAnnotationPresent(Component.class) || clazz.isAnnotationPresent(Controller.class);
+    }
+
+    private String getAnnotationBeanName(Class<?> clazz) {
+        if (clazz.isAnnotationPresent(Component.class)) {
+            return clazz.getAnnotation(Component.class).value();
+        }
+        if (clazz.isAnnotationPresent(Controller.class)) {
+            return clazz.getAnnotation(Controller.class).value();
+        }
+        return null;
+    }
+
     private String getBeanName(Class<?> clazz) {
         if (clazz.isInterface()) {
             return clazz.getName();
         }
-        if (!clazz.isAnnotationPresent(Component.class)) {
+        if (!isSpringBean(clazz)) {
             return StrUtil.lowerFirstCase(clazz.getSimpleName());
         }
-        String personalName = clazz.getAnnotation(Component.class).value();
+        String personalName = getAnnotationBeanName(clazz);
         return personalName.isEmpty() ? StrUtil.lowerFirstCase(clazz.getSimpleName()) : personalName;
     }
 
@@ -134,5 +154,9 @@ public class GPApplicationContext implements BeanFactory {
             e.printStackTrace();
             return null;
         }
+    }
+
+    public Properties getConfig() {
+        return this.reader.getConfig();
     }
 }

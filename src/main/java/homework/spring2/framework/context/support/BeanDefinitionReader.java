@@ -1,6 +1,5 @@
 package homework.spring2.framework.context.support;
 
-import homework.spring2.framework.annotation.Component;
 import homework.spring2.framework.beans.BeanDefinition;
 import homework.utils.StrUtil;
 
@@ -59,5 +58,9 @@ public class BeanDefinitionReader {
         result.setBeanClassName(name);
         result.setFactoryBeanName(StrUtil.lowerFirstCase(name.substring(name.lastIndexOf(".") + 1)));
         return result;
+    }
+
+    public Properties getConfig() {
+        return config;
     }
 }
