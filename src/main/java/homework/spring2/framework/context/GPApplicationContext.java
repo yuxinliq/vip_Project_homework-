@@ -3,6 +3,7 @@ package homework.spring2.framework.context;
 import homework.spring2.framework.annotation.Autowired;
 import homework.spring2.framework.annotation.Component;
 import homework.spring2.framework.annotation.Controller;
+import homework.spring2.framework.aop.AopConfig;
 import homework.spring2.framework.beans.BeanDefinition;
 import homework.spring2.framework.beans.BeanWrapper;
 import homework.spring2.framework.context.support.BeanDefinitionReader;
@@ -112,12 +113,19 @@ public class GPApplicationContext implements BeanFactory {
         //new instance
         Object instance = initBeanInstance(beanDefinition);
         //new Warrper
-        BeanWrapper wrapper = new BeanWrapper(instance);
+        BeanWrapper wrapper = new BeanWrapper(instance,initAopConfig(beanDefinition));
         //regist to Map
         beanWrapperMap.put(beanDefinition.getBeanClassName(), wrapper);
         //populateProperties
         populateProperties(instance);
         return wrapper.getWrapperInstance();
+    }
+
+    private AopConfig initAopConfig(BeanDefinition beanDefinition) {
+        //1.检查原始bean的各个方法是否被切面切到
+        //2.获取代理对象及通知方法
+        //3.返回aopconfig
+        return null;
     }
 
 
