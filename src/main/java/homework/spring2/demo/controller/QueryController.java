@@ -17,6 +17,7 @@ public class QueryController {
 
     @RequestMapping("/query")
     public String query(@RequestParam("teacher") String teacher, @RequestParam("data") String data, @RequestParam("token") String token, ViewAndModel model) {
+        queryService.query();
         Map<String, Object> attrs = model.getMap();
         attrs.put("teacher", teacher);
         attrs.put("data", data);

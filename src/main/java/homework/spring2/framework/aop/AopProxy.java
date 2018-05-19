@@ -31,19 +31,18 @@ public class AopProxy implements InvocationHandler {
         //在原始方法调用以前要执行增强的代码
         //这里需要通过原生方法去找，通过代理方法去Map中是找不到的
         if (config.contains(m)) {
-            AopConfig.Aspect aspect = config.get(method);
-            aspect.getPoints()[0].invoke(aspect);
+            AopConfig.Aspect aspect = config.get(m);
+            aspect.getPoints()[0].invoke(aspect.getAspect());
         }
 
         //反射调用原始的方法
         Object obj = method.invoke(this.target, args);
-
+        System.out.println(this.target.getClass().getName() + "#" + method.getName());
         //在原始方法调用以后要执行增强的代码
-        if (config.contains(method)) {
-            AopConfig.Aspect aspect = config.get(method);
-            aspect.getPoints()[1].invoke(aspect);
+        if (config.contains(m)) {
+            AopConfig.Aspect aspect = config.get(m);
+            aspect.getPoints()[1].invoke(aspect.getAspect());
         }
-
         //将最原始的返回值返回出去
         return obj;
     }

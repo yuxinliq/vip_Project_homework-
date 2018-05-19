@@ -3,6 +3,7 @@ package homework.spring2.framework.servlet;
 import homework.spring2.framework.annotation.Controller;
 import homework.spring2.framework.annotation.RequestMapping;
 import homework.spring2.framework.annotation.RequestParam;
+import homework.spring2.framework.beans.BeanWrapper;
 import homework.spring2.framework.context.GPApplicationContext;
 
 import javax.servlet.ServletConfig;
@@ -120,7 +121,8 @@ public class DispatcherServlet extends HttpServlet {
     private void initHandlerMappings(GPApplicationContext context) {
         //获取所有beans
         for (String beanName : context.getBeanDefinitionNames()) {
-            Object bean = context.getBean(beanName);
+            BeanWrapper beanWrapper = context.getBeanWrapper(beanName);
+            Object bean = beanWrapper.getOriginalInstance();
             //筛选Controller
             if (!bean.getClass().isAnnotationPresent(Controller.class)) continue;
             //new handlerMapping
@@ -131,7 +133,7 @@ public class DispatcherServlet extends HttpServlet {
                 String uri = classUri + "/" + method.getAnnotation(RequestMapping.class).value();
                 uri = uri.replaceAll("/+", "/");
                 Pattern pattern = Pattern.compile(uri);
-                handlerMappings.add(new HandlerMapping(bean, method, pattern));
+                handlerMappings.add(new HandlerMapping(beanWrapper.getWrapperInstance(), method, pattern));
                 System.out.println("mapping:" + uri + " to " + method);
             }
         }

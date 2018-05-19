@@ -8,4 +8,8 @@ import homework.spring2.framework.annotation.Component;
 public class QueryServiceImpl implements QueryService {
     @Autowired
     private QueryDao queryDao;
+
+    public void query() {
+        System.out.println("query");
+    }
 }

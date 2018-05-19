@@ -11,10 +11,13 @@ import homework.spring2.framework.core.BeanFactory;
 import homework.utils.StrUtil;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class GPApplicationContext implements BeanFactory {
     private final String[] locations;
@@ -102,32 +105,61 @@ public class GPApplicationContext implements BeanFactory {
 
     @Override
     public Object getBean(String beanName) {
+        return this.getBeanWrapper(beanName).getWrapperInstance();
+    }
+
+    public BeanWrapper getBeanWrapper(String beanName) {
         BeanDefinition beanDefinition = beanDefinitionMap.get(beanName);
         if (beanDefinition == null) {
             return null;
         }
         BeanWrapper cache = beanWrapperMap.get(beanDefinition.getBeanClassName());
         if (cache != null) {
-            return cache.getWrapperInstance();
+            return cache;
         }
         //new instance
         Object instance = initBeanInstance(beanDefinition);
         //new Warrper
-        BeanWrapper wrapper = new BeanWrapper(instance,initAopConfig(beanDefinition));
+        BeanWrapper wrapper = new BeanWrapper(instance, initAopConfig(beanDefinition));
         //regist to Map
         beanWrapperMap.put(beanDefinition.getBeanClassName(), wrapper);
         //populateProperties
         populateProperties(instance);
-        return wrapper.getWrapperInstance();
+        return wrapper;
     }
 
     private AopConfig initAopConfig(BeanDefinition beanDefinition) {
-        //1.检查原始bean的各个方法是否被切面切到
-        //2.获取代理对象及通知方法
-        //3.返回aopconfig
-        return null;
-    }
+        try {
+            String[] before = reader.getConfig().getProperty("aspectBefore").split("#");
+            String[] after = reader.getConfig().getProperty("aspectAfter").split("#");
+            String name = beanDefinition.getBeanClassName();
+            if (name.equals(before[0])) {
+                return null;
+            }
+            AopConfig config = new AopConfig();
+            //1.检查原始bean的各个方法是否被切面切到
+            Class clazz = Class.forName(name);
+            Pattern pattern = Pattern.compile(reader.getConfig().getProperty("aopPoint"));
 
+            Class aspectClass = Class.forName(before[0]);
+            for (Method method : clazz.getMethods()) {
+                String key = clazz.getName() + "#" + method.getName();
+                Matcher matcher = pattern.matcher(key);
+                if (matcher.find()) {
+                    //2.获取代理对象及通知方法
+                    config.put(method, this.getBean(getBeanName(aspectClass)), new Method[]{aspectClass.getMethod(before[1]), aspectClass.getMethod(after[1])});
+                }
+            }
+            //3.返回aopconfig
+            if (config.getPoints().isEmpty()) {
+                return null;
+            }
+            return config;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
 
     private void populateProperties(Object instance) {
         Field[] fields = instance.getClass().getDeclaredFields();

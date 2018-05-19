@@ -15,6 +15,10 @@ public class AopConfig {
         this.points.put(target, new Aspect(aspect, points));
     }
 
+    public Map<Method, Aspect> getPoints() {
+        return points;
+    }
+
     public Aspect get(Method method) {
         return this.points.get(method);
     }
